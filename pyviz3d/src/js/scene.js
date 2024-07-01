@@ -629,6 +629,91 @@ function update_controls(){
 	controls.enablePan = true; // enable dragging
 }
 
+
+// add the HTML elements for input, button, and answer display
+function add_input_and_answer_elements() {
+   // Create a div element for the text box
+	const textBoxDiv = document.createElement('div');
+	textBoxDiv.style.position = 'absolute';
+	textBoxDiv.style.top = '10px';
+	textBoxDiv.style.left = '10px';
+	textBoxDiv.style.zIndex = '100';
+	textBoxDiv.innerHTML = `
+    <textarea id="userInput" placeholder="Enter prompt" style="width: 320px;height:100px;"></textarea>
+    <button id="submitBtn" style="position: fixed; top 10px; margin-left: 10px;">Ask</button>
+    <p id="response" style="font-weight: 500; padding: 5px; width: 420px; text-align: justify; background-color: rgba(169, 169, 169, 0.7);"></p>
+	`;
+	document.body.appendChild(textBoxDiv);
+
+	// API endpoint and key
+	const apiEndpoint = 'https://api.openai.com/v1/chat/completions';
+	const apiKey = 'sk-X';
+
+	// Add event listener to handle input and display the answer
+	document.getElementById('submitBtn').addEventListener('click', async function() {
+		const userInput = document.getElementById('userInput').value;
+		const responseElement = document.getElementById('response');
+	
+		// Send the user input to the GPT-4 API
+		try {
+			const response = await fetch(apiEndpoint, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${apiKey}`
+				},
+				body: JSON.stringify({
+					model: "gpt-4o",
+                	messages: [
+						{role: "system", content: `Do not use any other data for those objects than is listed below.
+							 Do not output LaTex code.
+							 Answer consice and clear without explaining the calculation.
+							 
+							Consider this data when answering:
+
+							Künka bridge:
+							 Künka bridge is 200 meters long,
+							 10 meters high,
+							 12 meters wide,
+							 and both ramps are 100 meters long.
+
+							 Deadline to finish contruction is Dec 2024.
+							 Current date is 21 June 2024.
+
+							 Currently 6000 m3 are excavated out of 10500 m3.
+							 Currently no concrete is poured.
+							 
+							 The bridge will be made of concrete.
+							 The bridge is located in Raplamaa, Estonia.
+
+							Künka bridge landscape as of 17th June 2024:
+								2400 sqm
+								1000 sqm of grass
+								1400 m3 of soil excavated
+								4000 m3 of sand added
+								2000 m3 of gravel added
+
+							Künka bridge landscape change:
+								Previous scan was on 1st June 2024.
+								Last scan was on 17th June 2024.
+								deadline for landscape excavation is 10th July 2024.
+							 `},
+						{role: "user", content: userInput + '\n' + "Do not output formatted formulae."} ],
+					max_tokens: 150
+				})
+			});
+	
+			const data = await response.json();
+			responseElement.innerText = data.choices[0].message.content;
+		} catch (error) {
+			responseElement.innerText = 'Error: ' + error.message;
+		}
+	});
+}
+
+// Call the function to add the elements to the page
+add_input_and_answer_elements();
+
 const scene = new THREE.Scene();
 
 const renderer = new THREE.WebGLRenderer({antialias: true});
@@ -666,3 +751,4 @@ fetch('nodes.json')
     .then(() => init_gui(threejs_objects))
 	.then(() => console.log('Done'))
 	.then(render);
+
